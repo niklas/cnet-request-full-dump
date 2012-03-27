@@ -11,6 +11,6 @@ full dump.
 Setup
 =====
 
-# Copy `settings.yml.example` to `settings.yml` and fill in your credentials.
-# run the script (e.g. per cron)
+1. Copy `settings.yml.example` to `settings.yml` and fill in your credentials.
+2. run the script (e.g. per cron)
 
