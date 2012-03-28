@@ -1,0 +1,50 @@
+#!/bin/bash
+
+export CI=true
+export CI_REPORTS="log/reports/"
+
+RUBY='ruby-1.9.3-p0'
+GEMSET='cnet-request-full-dump'
+APP_DIR=`pwd`
+
+# Install RVM
+rvmrc="$HOME/.rvmrc"
+
+
+cat >> $rvmrc <<-EORC
+rvm_install_on_use_flag=1
+EORC
+sort -u -o $rvmrc $rvmrc
+
+# remove remotely removed branches
+git remote prune origin
+
+# remove files not under versioncontrol
+git clean -fdx
+
+test -f "$HOME/.rvm/scripts/rvm" ||
+  ( bash < <(curl -s https://raw.github.com/wayneeseguin/rvm/master/binscripts/rvm-installer) )  || exit 1024
+
+source "$HOME/.rvm/scripts/rvm" || exit 512
+
+rvm use $RUBY@$GEMSET --create || ( rvm install $RUBY && rvm use $RUBY@$GEMSET --create) || exit 256
+
+which bundle || gem install bundler -v 1.0.21 --no-ri --no-rdoc || exit 128
+
+cp "$APP_DIR/../shared/settings.yml" "$APP_DIR"
+
+echo "--- bundling"
+# run bundle install only if bundle check misses something
+# taking out the --relock as we don't change the Gemfile.lock
+bundle check || bundle install || exit 64
+echo "--- bundling finished"
+
+ret=$((0))
+
+
+echo "--- requesting full dump"
+bundle exec ruby run.rb    || ret=$(($ret+1))
+echo "--- requesting full dump done"
+
+echo "fin. (exit code: $ret)"
+exit $ret
